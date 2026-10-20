@@ -2,7 +2,7 @@
 
 Tiny, offline Vietnamese spelling detection and minimal-edit correction, with foreign-name preservation, reproducible datasets, and CPU benchmarks.
 
-**Status:** research scaffold, Phase 1–2. No detector, trained weights, correction API, or measured quality/latency results yet. The executable component currently validates dataset contracts and common split leakage.
+**Status:** research scaffold with an executable dictionary/rules baseline, minimal-edit candidates, evaluator and CPU diagnostic. No learned model or independent quality benchmark yet. The bundled lexicon is explicitly demo-only; data acceptance gates remain open.
 
 ## Bắt đầu ở đây
 
@@ -16,6 +16,8 @@ Python 3.11 trở lên; scaffold không cần third-party runtime dependencies. 
 ```sh
 PYTHONPATH=src python -m vietspeller.cli validate data/examples/illustrative.jsonl
 PYTHONPATH=src python -m unittest discover -s tests -v
+PYTHONPATH=src python -m vietspeller.cli check --artifact data/examples/bootstrap-lexicon.json --text 'Tôi đang họcc bài trên Kubernetes.'
+PYTHONPATH=src python -m vietspeller.cli evaluate data/examples/illustrative.jsonl --artifact data/examples/bootstrap-lexicon.json --split demo --allow-demo
 ```
 
 Có thể cài package bằng `python -m pip install -e .`, rồi dùng `vietspeller validate PATH...`. Truyền tất cả split files cùng một lần để kiểm tra leakage giữa các file.
@@ -28,12 +30,13 @@ Có thể cài package bằng `python -m pip install -e .`, rồi dùng `vietspe
 - [Architectures và nguồn nghiên cứu](docs/research.md)
 - [Roadmap và acceptance gates](docs/roadmap.md)
 - [E001: precision-constrained baseline](experiments/E001-baseline-feasibility.md)
+- [R baseline: sử dụng, limitations và artifact contract](docs/rules-baseline.md)
 - [Mẫu experiment report](experiments/report-template.md)
 
 ## Cách làm việc
 
 Mentor giúp đặt giả thuyết, review và thiết kế ablation. Người học triển khai detector, chạy thí nghiệm và giải thích quyết định. Routine tooling có thể được cung cấp trực tiếp. Không chọn neural architecture trước khi baseline và error analysis chỉ ra nhu cầu.
 
-Model size tính cả weights, dictionary, tokenizer và bảng phụ trợ. Runtime disk size và process RAM đo riêng. Không cần LLM tại inference; LLM data generation chưa được tích hợp.
+Model size tính cả weights, dictionary, tokenizer và bảng phụ trợ. Runtime disk size và process RAM đo riêng. Không cần LLM tại inference; LLM data generation chưa được tích hợp. Diagnostic results nằm trong [R000 smoke report](experiments/R000-smoke-report.md), không dùng để chọn final architecture.
 
 Fixture minh họa không phải authentic benchmark và không được dùng để công bố quality. Repo chưa chọn license cho code; quyền sử dụng từng nguồn dữ liệu phải được kiểm tra riêng.

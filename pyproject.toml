@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vietspeller"
 version = "0.1.0"
-description = "Research scaffold for tiny, offline Vietnamese spelling detection and correction"
+description = "Offline Vietnamese rules baseline and reproducible spelling evaluation tools"
 requires-python = ">=3.11"
 dependencies = []
 

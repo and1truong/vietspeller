@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "demo_only": true,
+  "provenance": "Project-authored tiny seed vocabulary and terms for functional diagnostics, 2026-10-20. Licensing unassigned. Not representative, not an independent benchmark resource.",
+  "syllables": [
+    "ai", "an", "anh", "ba", "bài", "bạn", "bằng", "bắt", "biết", "bóng", "bộ", "bốn", "bữa",
+    "cả", "cách", "cái", "cần", "câu", "chạy", "chào", "cho", "chơi", "chúng", "chuyền", "có", "con", "công", "của", "cùng",
+    "đã", "đang", "đây", "đến", "đẹp", "đi", "điều", "đọc", "đúng", "được", "dùng",
+    "em", "gặp", "gửi", "gia", "giờ", "giúp", "hai", "hàng", "hay", "hệ", "họ", "học", "hỏi", "hôm", "hơn",
+    "khi", "không", "kiểm", "kỹ", "là", "lại", "làm", "lần", "lên", "lỗi", "lớp", "lúc", "lưu",
+    "máy", "mẹ", "mình", "một", "mới", "mua", "muốn", "năm", "nay", "ngày", "nghe", "người", "nhà", "nhau", "nhiều", "nhỏ", "những", "nói", "nơi", "nước",
+    "ở", "phải", "phần", "qua", "quả", "quyền", "quyển", "rất", "rồi", "sách", "sai", "sau", "sẽ", "sinh", "số", "sửa",
+    "ta", "tại", "tên", "tháng", "thấy", "thêm", "thích", "thì", "thông", "thư", "thứ", "tiếng", "tin", "tính", "tôi", "tốt", "trên", "trời", "trong", "truyền", "trường", "từ", "tuần",
+    "và", "vẫn", "về", "việc", "viết", "với", "vở", "vui", "xem", "xin", "ý"
+  ],
+  "protected_terms": [
+    "AWS", "Anthropic", "Brisbane", "Elon Musk", "Kubernetes", "Microsoft", "München", "NVIDIA", "OpenAI", "PostgreSQL", "Python", "PyTorch", "Queensland", "San Francisco", "Satya Nadella", "TypeScript", "deploy", "service"
+  ]
+}
