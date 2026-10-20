@@ -1,51 +1,92 @@
-# Dataset contract v1
+# Dữ liệu học: đọc và viết một example
 
-JSONL UTF-8, một record mỗi dòng. Record fields:
+## Mục tiêu bài học
 
-| Field | Quy ước |
+Hiểu một sample chứa input và đáp án như thế nào, đọc được JSONL đang có và biết validator kiểm tra điều gì. Contract là quy ước các fields để code đọc dữ liệu nhất quán, không phải bằng chứng dữ liệu đúng về ngôn ngữ.
+
+Bắt đầu bằng ví dụ tự viết nhỏ. Các yêu cầu kiểm tra nguồn/split nghiêm túc hơn phục vụ kết luận rộng sau này; không cần corpus lớn trước khi hiểu sample/label.
+
+## 1. JSONL là gì?
+
+JSONL là file text UTF-8, mỗi dòng chứa một JSON object đầy đủ. Vì mỗi record độc lập, ta có thể đọc từng dòng và báo vị trí record sai. Mở [illustrative.jsonl](../data/examples/illustrative.jsonl) để xem 22 examples có thật trong repo.
+
+Một record có text gốc, corrected_text làm đáp án chính, annotations mô tả các edits và entities mô tả tên/foreign terms. Câu sạch có annotations rỗng và corrected_text giống text. Empty list là thông tin “không có gold error”, không phải thiếu dữ liệu.
+
+## 2. Các fields v1
+
+| Field | Giải thích cho người đọc mới |
 |---|---|
-| schema_version | Integer 1 |
-| id | Unique trong toàn dataset version |
-| group_id | Nhóm nguồn để split: toàn document/thread và mọi derived examples |
-| split | demo, train, validation hoặc test |
-| profile | strict hoặc informal |
-| domain | general, technical, chat hoặc domain đã ghi trong manifest |
-| text | Unicode gốc, không normalization khi lưu |
-| corrected_text | Reference thu được bằng first replacement của từng gold edit |
-| annotations | Ordered list: start, end, text, label, replacements |
-| entities | List: start, end, text, label, valid |
-| source | kind, reference, license |
+| schema_version | Phiên bản quy ước, hiện là integer 1 |
+| id | Tên duy nhất của example |
+| group_id | Nhận diện nguồn gốc chung để các biến thể không bị tách qua train/test |
+| split | Vai trò dữ liệu: demo, train, validation hoặc test |
+| profile | Chính sách strict hoặc informal |
+| domain | Loại nội dung, ví dụ general, technical, chat |
+| text | Câu gốc, không tự đổi Unicode khi lưu |
+| corrected_text | Câu tạo bởi first replacement của từng gold edit |
+| annotations | Danh sách gold edits theo thứ tự source offsets |
+| entities | Danh sách spans người/nơi/tổ chức/công nghệ/foreign term |
+| source | Loại nguồn, reference và thông tin license |
 
-`source.kind`: fixture, authentic, synthetic_rule, synthetic_llm. `source.reference` chỉ tới provenance record hoặc nguồn có thể truy vết. `source.license` là license identifier hoặc trạng thái chưa xác minh; **một chuỗi license không chứng minh có quyền sử dụng**. Data gate chặn nguồn chưa xác minh.
+Source kind nhận fixture, authentic, synthetic_rule hoặc synthetic_llm. Fixture là ví dụ cố định của bài kiểm tra; authentic là dữ liệu sử dụng thực; hai synthetic kinds là ví dụ được tạo bằng chương trình hoặc LLM. Loại source do người chuẩn bị khai báo; validator không tự chứng minh khai báo đó đúng.
 
-Entity labels: person, place, organization, technology, foreign_term. Valid entities không giao với gold edits; typo trong tên có entity `valid=false`. Empty replacements hợp lệ cho xóa ký tự. Zero-length source spans chỉ dùng character_deletion. Không có grammar/style/punctuation labels trong spelling gold.
+## 3. Theo một edit cụ thể
 
-First replacement dùng để tái tạo reference chính. Các replacement khác chỉ hợp lệ nếu annotator xác nhận không đổi ý nghĩa trong context. Đây chưa biểu đạt đầy đủ mọi tổ hợp sentence-level alternatives; evaluator phải ghi rõ hạn chế, không dùng một gold string để phủ nhận mọi cách sửa hợp lệ.
+Record extra-character có text “Tôi đang họcc bài.” Chữ c thừa ở start 12, end 13. Annotation text là “c”, label là character_insertion và replacements có một chuỗi rỗng. Applying edit nghĩa xóa đoạn đó; corrected_text thành “Tôi đang học bài.”
 
-## Provenance và split
+Tên label mô tả lỗi người viết: insertion là người viết đã gõ thừa, còn thao tác sửa là xóa. Với character_deletion, người viết thiếu chữ nên thao tác sửa là chèn vào span rỗng. Đây là chỗ dễ đảo nghĩa khi mới đọc.
 
-1. Lưu source snapshot, source license evidence, collection date và document/thread identifiers ngoài record trong versioned manifest.
-2. Deduplicate nguồn trước khi split; toàn bộ revisions và augmentations của một nguồn ở cùng split.
-3. Freeze split assignments và checksums trước generation. Không học dictionary, tokenizer, frequencies, confusion weights hoặc calibration từ test.
-4. Chạy validator với toàn bộ split files. Validator bắt group leakage và NFC/casefold/whitespace exact duplicates giữa source/target texts; **không bắt semantic paraphrases, near duplicates hoặc group IDs khai sai**.
-5. Kiểm tra near duplicates và repeated templates riêng. Mỗi holdout có source lineage khác train; unseen-name slice còn cần entity-disjoint split.
+Một annotation có thể có nhiều replacements được người gắn nhãn xác nhận hợp lệ. Replacement đầu tạo corrected_text chính. Không tự thêm paraphrases làm đáp án và không mặc định mọi tổ hợp alternatives tạo cùng một ý nghĩa ở cấp câu.
 
-## LLM và deterministic synthetic pipeline — specification, chưa triển khai
+## 4. Entity không đồng nghĩa miễn mọi lỗi
 
-LLM dùng tạo contextual confusions, hard negatives và teacher labels. Mechanical noise dùng generator kiểm soát được edit trace. Telex/VNI cần mô phỏng một IME behavior đã chỉ định; không coi mọi raw keystroke string là lỗi người dùng thấy trên màn hình. Chỉ kiểm tra committed text, không báo lỗi giữa IME composition.
+Entity gồm start, end, text, label và valid boolean. Labels hiện có person, place, organization, technology và foreign_term. Valid true nghĩa surface đã được xác nhận đúng và gold edits không được sửa bên trong nó. Valid false cho phép ghi typo thật trong một tên, ví dụ “Pyhton” khi context xác nhận định viết Python.
 
-Manifest generation phải ghi teacher/model version, prompt hash, decoding settings, seed nếu hỗ trợ, clean source hash, operator, severity và review status. Teacher model version/seed không đảm bảo provider tái tạo bit-for-bit; lưu output gốc để replay.
+Giữ entity labels khi đánh giá không có nghĩa đưa gold entities cho detector. Gold là đáp án để chấm. Cho model xem vị trí/tên đúng từ test sẽ đổi bài toán và có thể làm kết quả quá dễ.
 
-Sinh cả clean negatives, tên lạ đúng, tên có typo thật, regional vocabulary và informal/technical text. Không dùng capitalization làm shortcut duy nhất cho tên. Kiểm tra một mẫu phân tầng bằng người đọc tiếng Việt; teacher confidence chưa được coi là calibrated. Distillation bằng labels/rank preferences là vòng đầu; soft targets chỉ dùng khi teacher có cung cấp và được đánh giá phù hợp.
+## 5. Train, validation, test khác demo thế nào?
 
-Không đưa test vào prompts hoặc dùng teacher quyết định lại gold test trong quá trình tuning. Không thể bảo đảm public test chưa từng có trong pretraining của teacher; ghi rõ giới hạn và bổ sung private/authored-after-training challenge cases khi có thể. Không dùng private user messages nếu chưa có sự cho phép và xử lý dữ liệu phù hợp.
+Train dùng để tối ưu weights. Validation dùng để chọn cấu hình/threshold. Test giữ riêng để kiểm tra lựa chọn đã chốt. Demo chỉ minh họa cách chương trình xử lý dữ liệu.
 
-## Data acceptance gate
+Validator khóa source fixture ở split demo. Đừng đổi 22 fixtures thành test để trình bày independent evaluation. Có thể học training bằng toy examples riêng, nhưng phải đánh dấu rõ mục đích và giới hạn; chưa phải benchmark tổng quát tiếng Việt.
 
-- 100% records qua schema/span reconstruction và cross-split checks.
-- Provenance/license review xong cho mọi nguồn được train hoặc redistribute.
-- Hai annotators độc lập kiểm tra pilot ít nhất 100 câu, báo span agreement và label disagreements; adjudicate trước freeze gold.
-- Challenge, synthetic và naturally occurring errors được báo riêng.
-- Gold ambiguous/unresolved không bị ép vào một correction; giữ trong separate review queue.
+Group_id phải bao source document/thread và mọi derived examples liên quan. Nếu lấy một câu sạch sinh 10 typo variants, giữ chúng cùng split. Chia dòng ngẫu nhiên có thể đưa gần như cùng một câu vào cả train và test, làm ta tưởng model tổng quát tốt.
 
-Examples hiện có là fixture do dự án viết để kiểm tra contract. Không phải independent test, không phải mẫu phân phối lỗi thật.
+## 6. Validator đang bắt những lỗi gì?
+
+- Thiếu/không đúng field types, enum không được hỗ trợ hoặc id trùng.
+- Span ngoài input, annotation text không khớp raw slice, edits chồng nhau.
+- Corrected_text không bằng kết quả áp dụng first replacements.
+- No-op edit hoặc chỉ đổi canonical normalization mà gọi là lỗi.
+- Gold edit chạm entity được ghi valid true.
+- Group_id hoặc text trùng sau NFC/casefold/whitespace normalization xuất hiện ở splits khác nhau.
+
+Nó chưa hiểu semantic correctness, không kiểm tra đầy đủ graphemes, không nhận ra mọi near-duplicate/paraphrase, không biết group_id có được khai thật và không xác nhận license. Cấu trúc đúng chỉ là bước đầu.
+
+Chạy tất cả split files cùng một invocation để kiểm tra trùng giữa files: PYTHONPATH=src python -m vietspeller.cli validate PATH1 PATH2. PATH1/PATH2 là placeholders cần thay bằng file thật, không phải files có sẵn trong repo.
+
+## 7. Tạo dữ liệu tổng hợp để học
+
+Noisy/clean pair là câu lỗi và câu tham chiếu. Deterministic generator có thể chèn/xóa/đổi ký tự và lưu lại edit trace. LLM có thể đề xuất contextual errors hoặc hard negatives: từ lạ nhưng đúng mà classifier dễ báo nhầm.
+
+Cả hai là kế hoạch chưa triển khai. LLM output không mặc định đúng hoặc giống lỗi người thật. Teacher–student distillation là dùng labels/outputs của teacher để học student nhỏ; student có thể học cả lỗi và thiên lệch của teacher. Lưu input/output gốc để xem lại, không chỉ tin một confidence do teacher tự nói.
+
+Ở bài đầu, tự viết một vài examples sẽ giúp hiểu labels hơn sinh hàng triệu câu. Khi mở rộng, lưu source hash, generator/model/prompt version, seed nếu hỗ trợ, operations và review status. Tách nguồn trước khi sinh variants; không để test xuất hiện trong prompts/tuning.
+
+Telex/VNI có trạng thái composition. Raw keystrokes không phải lúc nào cũng là text người dùng đã commit. Khi học generator, phải nêu rõ behavior đang mô phỏng thay vì mặc định một quy tắc cho mọi bộ gõ.
+
+## 8. Khi muốn dữ liệu đáng tin hơn
+
+Ghi provenance, tức nguồn gốc có thể truy vết: nguồn nào, phiên bản nào, có quyền dùng thế nào. Dữ liệu công khai chưa tự động có quyền train/redistribute. Repo hiện chưa import third-party corpus và chưa chọn project license.
+
+Nhờ hai người đọc một mẫu giúp tìm bất đồng trong guideline; đây là bài nâng cao, không bắt buộc hai annotators trước toy training. Giữ ambiguous examples trong review queue thay vì ép gold. Báo riêng synthetic, challenge tự viết và lỗi tự nhiên.
+
+## Bài tập
+
+1. Đọc record extra-character và tự tạo corrected_text bằng span.
+2. Viết một clean example và một missing-character example cho bài tập của mình.
+3. Cố ý dịch start một vị trí, chạy validator và đọc message.
+4. Viết một trường hợp qua validator nhưng label sai về ngôn ngữ.
+5. Giải thích vì sao source/target gần trùng giữa train/test làm kết quả dễ gây hiểu nhầm.
+
+Điểm hoàn thành: đọc được một record, hiểu label/span và nói được validator làm được/chưa làm được gì. Bước tiếp theo là [training](training-from-zero.md) và [evaluation](benchmark.md).

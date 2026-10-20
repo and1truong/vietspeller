@@ -1,54 +1,89 @@
-# E001 — Precision-constrained baseline feasibility
+# E001 — Học xem machine learning thêm được gì so với rules
 
-Status: designed, not run on independent data. R implementation và evaluator đã có; R000 smoke diagnostic được báo riêng. Chưa có L/LC/LCN models, matched-FPR operating-point selection hoặc E001 benchmark results.
+## Trạng thái và mục tiêu
 
-## Quyết định cần hỗ trợ
+Đây là bài học thí nghiệm sắp thực hiện, chưa có kết quả E001. R baseline/evaluator đã chạy được; [R000](R000-smoke-report.md) là diagnostic riêng. Chưa có learned L/LC/LCN models, training CLI hoặc threshold search.
 
-Có nên giữ cấu hình dưới 100 KB làm ứng viên chính cho editor? Loại được một cấu hình không chứng minh mọi thuật toán cùng budget đều bất khả thi.
+Mục tiêu không phải đạt một production score. Người học cần hiểu cách đặt giả thuyết, fit một model đơn giản, giữ dữ liệu riêng và giải thích điều gì thay đổi khi thêm features. Model kém rules vẫn là kết quả học hợp lệ.
 
-## Hypotheses — viết trước implementation
+Đọc trước [training từ đầu](../docs/training-from-zero.md) và [benchmark](../docs/benchmark.md). Tra thuật ngữ ở [glossary](../docs/glossary.md).
 
-- H1: orthographic rules cung cấp non-word recall nhưng foreign names làm precision giảm nếu chỉ dùng dictionary membership.
-- H2: context features cải thiện real-word recall ở matched clean-text flag rate.
-- H3: name signals giảm false positives nhưng hard protection có thể che typo thật trong tên.
-- H4: INT8 weights giữ được operating point trong tolerance đo được; đây chưa phải giả định được chấp nhận.
+## 1. Câu hỏi nhỏ đầu tiên
 
-Người học điền bằng lời của mình: hypothesis nào có khả năng sai nhất, failure example cụ thể, false-positive/false-negative nào tốn kém hơn trong editor? Không đặt expected F1 tùy ý.
+Rules có thể nhận “họcc” nhưng bỏ sót “bóng truyền” hoặc làm sai tên. Một classifier học từ examples có giúp một nhóm lỗi cụ thể hơn không? Đừng hỏi ngay “kiến trúc nào tốt nhất tiếng Việt”; câu hỏi đó quá rộng cho bài đầu.
 
-## Variants
+Trước implementation, người học ghi: dự đoán ML sẽ giúp loại lỗi nào, dựa vào feature nào và case nào có thể làm dự đoán sai. Mentor review prediction, không yêu cầu phải đoán đúng.
 
-| ID | Configuration | Câu hỏi |
+## 2. Các phần bài tập, làm lần lượt
+
+### Phần A — hiểu dữ liệu và điểm số
+
+Chọn bài tập nhỏ tự viết với labels rõ, gồm token đúng, typo, tên/foreign terms và vài câu mơ hồ để thảo luận. Ghi rõ toy exercise. Có thể bắt đầu bằng vài chục examples; không dùng chúng để tuyên bố chất lượng tiếng Việt.
+
+Giữ mọi variants cùng source group. Tách phần để fit và phần để kiểm tra; khi cần chọn cấu hình/threshold, thêm validation role rõ ràng. Demo fixtures hiện có vẫn là demo, không đổi tên thành independent test.
+
+Bài tập: viết một record, chạy validator, tự tính TP/FP/FN cho vài predictions. Giải thích vì sao classifier báo mọi thứ là sai có thể có recall cao.
+
+### Phần B — model nhỏ đầu tiên
+
+Thiết kế local features trước khi xem hướng mentor ưu tiên. Có thể bắt đầu với ít explicit features để hiểu từng weight; rồi thử char n-gram Logistic Regression. Implementation/training sẽ được hướng dẫn ở bước code tiếp, không có command train sẵn trong tài liệu này.
+
+Fit trên train, dùng validation khi chọn cấu hình, đọc predictions ở phần giữ riêng. Lưu features, weights, bias và labels/class order. Không chỉ lưu một score.
+
+Bài tập: đưa một token qua feature vector và tính lại raw score bằng tay hoặc một hàm nhỏ. Chỉ ra phần nào do optimizer học, phần nào do người lập trình chọn.
+
+### Phần C — một comparison và một ablation
+
+So learned local classifier với R trên cùng examples/chính sách chấm. Nếu thêm context, giữ các phần còn lại và ghi thay đổi capacity/features. Ablation là bỏ một phần để xem nó thực sự đóng góp gì.
+
+Một linear classifier trên token chưa tự có exact character-span output. Nếu candidate/minimal-edit code được dùng để tạo spans, phải ghi rõ chỗ đó để so cả classifier-level và end-to-end behavior một cách trung thực.
+
+Bài tập: chọn 3 false positives và 3 false negatives nếu có đủ; tự phân loại lỗi do dữ liệu, features, candidates, ranking hay policy. Không sinh thêm failures để đạt quota báo cáo.
+
+## 3. Các variants để nghiên cứu dần
+
+| ID | Ý nghĩa bài học | Trạng thái |
 |---|---|---|
-| R | Dictionary + orthographic rules | Luật làm được bao nhiêu? |
-| L | R + hashed char n-gram Logistic Regression | Learned local evidence thêm gì? |
-| LC | L + bounded context features | Context có giá trị không? |
-| LCN | LC + conservative name/foreign-term signals | Giảm false positives bằng gì, có che lỗi không? |
-| LCN-Q | LCN với quantized weights | Artifact budget có đạt mà giữ operating point không? |
+| R | Dictionary/rules hiện tại, gồm protection/abstention cố định | Có implementation |
+| L | Học local character evidence bằng linear classifier | Chưa triển khai |
+| LC | Thêm bounded context features | Chưa triển khai |
+| LCN | Nghiên cứu learned name/foreignness signals bên cạnh fixed protection | Chưa triển khai |
+| LCN-Q | Thử quantized weights để học size/quality trade-off | Chưa triển khai |
 
-Train/validation giống nhau giữa variants. Ablations trên cùng feature/model budget; log khi thêm context làm thay đổi capacity hoặc feature collisions. Name-on/off tách khỏi context-on/off để tránh quy kết nhầm lợi ích.
+R hiện đã có protected terms/name heuristics; không giả vờ nó là baseline hoàn toàn không có name handling. Khi làm name ablation, phân biệt fixed rules với learned features, và xem cả name preservation lẫn true-typo recall.
 
-## Preconditions
+Không cần chạy hết bảng trong bài đầu. Chỉ mở variant mới khi có câu hỏi mà kết quả trước chưa trả lời được.
 
-Data gate trong roadmap phải đạt. Tạo development set và giữ final independent test riêng. Fixture chỉ dùng contract checks. Dictionary/statistics phải có provenance; chỉ fit trên train hoặc external resource được khai báo, không rút vocabulary từ test.
+## 4. Hypotheses gợi ý để người học thử phản biện
 
-Starting training budget: 10–50K clean source sentences, tối đa 200K initial synthetic instances; chạy subset learning curves trước khi tăng. Có clean negatives và authentic errors; chưa mặc định synthetic ratio tối ưu. Sample weighting chỉ được chọn trên validation.
+- Local character features có thể giúp non-word errors nhưng chưa đủ cho nhiều real-word confusions.
+- Context có thể phân biệt candidates hợp lệ về mặt chữ nhưng khác nghĩa.
+- Name protection có thể giảm FP và đồng thời làm mất recall của typo thật trong tên.
+- INT8 có thể giảm weights nhưng làm đổi scores/threshold decisions.
 
-## Operating point và go/no-go
+Đây là giả thuyết, chưa là findings. Viết một counterexample cho ít nhất một hypothesis và nói experiment nào rẻ nhất để phân biệt.
 
-Proposed validation targets: precision ≥98%, clean-sentence flag rate ≤1%, valid-entity preservation ≥99,5%. Chưa có product requirement khẳng định những mức này đủ dùng.
+## 5. Đánh giá ở mức học tập
 
-Chọn threshold trên validation; báo uncertainty và matched-FPR recall trên development evaluation partition độc lập. Không chọn threshold lại bằng test. Nếu không có threshold thỏa thì report infeasible, không đổi mẫu số hoặc bỏ slice khó.
+Trước tiên dùng cách chấm nhỏ mà người học tự kiểm tra được. Report raw counts, support, detection/correction riêng, ví dụ sai và dữ liệu đã dùng. Sau khi hiểu cơ chế, mới tăng tới nhiều slices, authentic independent evaluation và uncertainty estimates.
 
-LCN-Q cần toàn inference artifact <100.000 bytes; báo uncompressed size. So với FP32, preregister allowed recall loss ≤1 percentage point ở matched constraints; nếu khoảng tin cậy chưa phân biệt được, kết luận inconclusive và thu thêm dữ liệu.
+Matched false-positive rate nghĩa so recall khi hai cấu hình được chọn threshold để gây mức báo nhầm tương đương trên validation. Nó trả lời câu hỏi khác với so default thresholds. Current R chưa có learned/calibrated score; các heuristic cutoffs của nó cũng cần được ghi rõ.
 
-Tiếp tục A nếu operating point hữu ích và resource budget đạt. Nếu real-word recall không đủ cho scope, thử B/C; chưa đặt recall gate số học trước khi biết prevalence và cost. Không loại B/C khi chưa train chúng. CPU timings chỉ báo measured values, chưa hứa latency số học.
+Precision 98%, clean flag rate 1%, preservation 99,5%, bundle dưới 100.000 bytes và allowed quantization loss 1 percentage point từng là mục tiêu nghiên cứu đề xuất. Chúng không phải acceptance criteria sản phẩm hay điều kiện hoàn thành bài học. Nếu dùng chúng ở bài nâng cao, chốt cách đo trước khi nhìn kết quả và cho phép kết luận inconclusive.
 
-## Deliverables và stop rule
+## 6. Khi nào mới mở rộng dữ liệu?
 
-Run manifest (git/data/artifact hashes, config, seed, environment), per-slice metrics/support, confidence intervals, PR curves, artifact accounting và ít nhất 30 error-analysis examples nếu có đủ lỗi. Phân tích FP/FN và names-with-typos.
+Khi người học đã hiểu fit/predict và thấy giới hạn của toy data, thêm nguồn có quyền sử dụng, kiểm tra labels và source duplicates. Budgets 10–50K clean sources/tối đa 200K synthetic instances là gợi ý nghiên cứu lớn hơn, không minimum requirements để bắt đầu.
 
-Dừng vòng đầu sau R/L/LC/LCN và quantization check, rồi review. Không tự mở thêm model families chỉ để săn score. Candidate recall@3 trên gold spans có thể là follow-up tách riêng để quyết định correction pipeline.
+Lưu source/prompt/generator versions khi tạo dữ liệu. Đừng lấy vocabulary, threshold hoặc confusion weights từ test. Score trên synthetic-only data chưa chứng minh xử lý lỗi thật.
 
-## Bài tập implementation đầu tiên
+## 7. Kết quả học cần đạt
 
-Thiết kế lexicon interface và feature extractor trên giấy trước. Trả lời: âm tiết hợp cấu trúc nhưng không nằm trong từ điển có chắc sai không? Làm sao xử lý “Nguyen”, “deploy”, và một tên lạ viết thường? Sau đó triển khai R và đưa 10 false positives cùng 10 false negatives để review. Chưa cần neural network.
+- Giải thích được vì sao một example có label đó và feature vector được tạo thế nào.
+- Phân biệt fit parameters với chọn hyperparameters/threshold.
+- Đọc được số đúng/sai, không chỉ báo F1.
+- Nêu được ít nhất một điều learned model thêm được hoặc chưa thêm được so với R.
+- Lưu được parameters/config để inference lại; chuẩn bị cho bài [TypeScript/Go](../docs/cross-language-inference.md).
+- Viết một [report](report-template.md) gồm observation, interpretation và điều chưa biết.
+
+Dừng để review sau mỗi phần nhỏ. Không tự train tất cả model families chỉ để săn score hoặc trông giống production project.

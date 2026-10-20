@@ -1,44 +1,101 @@
-# R baseline — executable diagnostic, not a production model
+# Bài thực hành: hiểu rules baseline đang chạy
 
-## API và CLI
+## Học được gì và chưa có gì?
 
-`RuleBaseline.load(path).check(text, profile)` trả findings và abstentions, giữ nguyên input. Findings dùng raw Unicode code-point spans và tối đa ba minimal replacements có chung source span. Một candidate khác boundary không được gán vào span của candidate đầu tiên. `apply_suggestions` là hàm opt-in cho top candidate; CLI check không auto-correct.
+Baseline là mốc đơn giản để so phương pháp sau này. R baseline trong repo dùng dictionary và các rules do người lập trình chọn. Nó không thực hiện training và không có learned weights. Đây là bước quan sát input/output trước khi học fit model.
 
-```sh
-PYTHONPATH=src python -m vietspeller.cli check --artifact data/examples/bootstrap-lexicon.json --text 'Tôi đang họcc bài trên Kubernetes.'
-PYTHONPATH=src python -m vietspeller.cli evaluate data/examples/illustrative.jsonl --artifact data/examples/bootstrap-lexicon.json --split demo --allow-demo --output runs/evaluation.json
-PYTHONPATH=src python -m vietspeller.cli benchmark data/examples/illustrative.jsonl --artifact data/examples/bootstrap-lexicon.json --split demo --allow-demo --warmup 100 --repeat 1000 --output runs/cpu.json
-```
+Đọc [learning guide](learning-guide.md) trước nếu các từ inference, candidate, span còn mới. Bài này giới thiệu code đang có, không yêu cầu chuẩn bị production dictionary.
 
-Để chấm external test, truyền artifact riêng và chọn `--split test` (default). Files tất cả splits có thể truyền cùng invocation để validation bắt cross-file leakage trước khi chọn partition. Chỉ bỏ demo flag trong artifact khi nguồn và data gate đã được xác minh; CLI không thể tự chứng minh provenance. External evaluation vẫn được đánh dấu unverified, không tự biến thành certified benchmark.
+## 1. Chạy một ví dụ
 
-## Artifact v1
+Từ repo root trên Bash: PYTHONPATH=src python -m vietspeller.cli check --artifact data/examples/bootstrap-lexicon.json --text 'Tôi đang họcc bài trên Kubernetes.'
 
-JSON gồm `schema_version: 1`, `demo_only` boolean, `provenance` nonempty string, `syllables` list và `protected_terms` list. Syllables phải là một Vietnamese-letter unit; chúng không được coi là lexically valid chỉ vì qua validator. Protected terms có thể gồm nhiều tokens, phải khớp phrase với whitespace giữa tokens. Case/NFC matching giữ nguyên source text.
+Artifact là file vocabulary/configuration. Check đọc câu và trả JSON. Với ví dụ này, quan sát finding ở chữ c thừa: start 12, end 13, source text “c” và candidate replacement rỗng, tức xóa chữ đó. Input không tự bị sửa.
 
-Bundled vocabulary do dự án viết, rất nhỏ, chưa có license được chọn; không phải toàn bộ âm tiết tiếng Việt. Không build dictionary hoặc protected terms từ evaluation gold. Known terms là explicit vocabulary protection, **không phải NER**, và có thể làm benchmark dễ giả tạo nếu terms lấy từ test. Diagnostic fixture và seed vocabulary được thiết kế cùng nhau, nên không có independence claim.
+Findings là những lỗi được đề xuất. Abstentions là trường hợp giữ nguyên vì thiếu bằng chứng. Score là edit heuristic, chưa phải calibrated confidence. Demo_only nhắc seed vocabulary là đồ dùng bài học.
 
-## Algorithm và abstention
+Thử tiếp “Tôi chơi bóng truyền.” và “Tôi gặp Nguyen.” Trước khi chạy, dự đoán output rồi giải thích nếu kết quả khác dự đoán. Không chỉ xem score; đọc cả phần không được báo.
 
-1. Tokenize letter+combining sequences, giữ raw offsets. Exact lexicon/term match được giữ.
-2. Bảo vệ URLs, email, inline code và snake_case identifiers theo pattern hẹp. Không phải code parser đầy đủ.
-3. Orthography cung cấp foreign-character và partial necessary-constraint evidence. Chưa có full syllable automaton; các phonology issues hiện là diagnostics, chưa được học hoặc calibrate như features.
-4. Sinh candidates bằng weighted optimal-string-alignment edit distance: insert/delete 1, generic substitute 1, diacritic-related substitute 0,25, adjacent transposition 0,75. Cắt candidate distance ở 1,25, giữ tối đa ba; đây là hand-chosen hypotheses, không empirical error probabilities.
-5. Abstain khi foreign/identifier, possible ASCII capitalized name, informal ASCII, không có candidate, top candidates cách nhau <0,35 hoặc best cost >1. Unknown non-ASCII name giống Vietnamese vẫn có thể bị báo nhầm; unknown lowercase ASCII có thể bị sửa nhầm. Bắt buộc đánh giá hai nhóm này trên real data.
-6. Một contiguous minimal edit được tính theo Vietnamese base+combining clusters, tránh cắt tone mark. Đây chưa là complete UAX #29 implementation. Label diacritic hiện heuristic, chưa phân loại chắc chắn misplaced mark hoặc keyboard cause.
+## 2. Theo source code ở đâu?
 
-`score = 1/(1+cost)` được ghi rõ uncalibrated heuristic. Không diễn giải 0,8 thành 80% đúng. Rule signal hiện chủ yếu là vocabulary/protection và candidate filtering; chưa có context model, frequency ranking hoặc full Telex/VNI decoder.
+| File | Vai trò |
+|---|---|
+| src/vietspeller/cli.py | Đọc command arguments và gọi chức năng tương ứng |
+| src/vietspeller/text.py | Token units, normalization helpers và minimal edit spans |
+| src/vietspeller/baseline.py | Load dictionary, candidate search, heuristic decision |
+| src/vietspeller/evaluation.py | So output với gold labels |
+| src/vietspeller/benchmark.py | Đo thời gian lặp lại và process memory |
+| src/vietspeller/data.py | Kiểm tra record structure và một số split leakage |
 
-Input limit 256 raw code points, token candidate search limit 32 NFC code points. Dài hơn không bị silently truncate. Search quét vocabulary, O(V × L²), cần indexing hoặc pruning khi vocabulary lớn. Không lấy timing với seed lexicon làm timing cho vocabulary thật.
+API Python chính là RuleBaseline.load(path).check(text, profile). Path phải trỏ tới file artifact. Apply_suggestions là hàm riêng để áp dụng top candidates khi được gọi rõ; check không tự rewrite câu.
 
-## Evaluator semantics
+## 3. Các bước baseline làm
 
-Không đưa gold entities hoặc gold spans vào detector. Oracle candidate recall là phép đo riêng: dùng gold location để hỏi generator có tạo đáp án đúng trong ba candidates không. Các zero-length gaps ở token boundaries và edits qua nhiều tokens hiện có thể không có candidate; được tính miss, không bỏ mẫu số. Oracle ranker accuracy chưa được đo.
+1. Tách tokens thành letter+combining units, giữ raw offsets; chưa phải word segmentation tiếng Việt đầy đủ.
+2. Giữ các exact lexicon entries và protected phrases/terms đã khai báo; so bằng case/NFC key.
+3. Bảo vệ một số URLs, email, inline code và snake_case patterns; đây không phải parser cho mọi loại code.
+4. Tính partial orthographic evidence. Các phonology issues chủ yếu là diagnostics; chưa có full syllable automaton hoặc learned feature use.
+5. Quét candidate vocabulary, gồm syllables và một số single-token protected terms, tính edit cost.
+6. Dùng hand-chosen rules để đề xuất hoặc abstain, rồi tính minimal raw-text edit.
 
-Character-span metric match chính xác one-to-one. Token-span dùng letter units của baseline, không gọi chúng là lexical words. Các gold edits cùng token được collapse thành token-span set. Missing-character gap trong token quy về token đó; gap ngoài token giữ raw anchor.
+Protected terms không phải NER. Thuật ngữ/tên chưa được khai báo có thể bị xử lý sai. Không truyền gold entities từ evaluation vào detector để làm kết quả dễ hơn.
 
-End-to-end correction top-1/top-3 dùng toàn bộ gold edits làm mẫu số, bao gồm missed detections. Edit precision còn tính cả edits sai trên clean text. Sentence exact dùng first-replacement reference và NFC equivalence; chưa có đầy đủ acceptable sentence alternatives.
+## 4. Candidate distance có nghĩa gì?
 
-Valid-entity preservation đo trên suggested top edits, cạnh recall trên genuine entity typos. Abstentions không được render như error highlights; nếu UI gạch chân thì phải đưa chúng vào finding metrics. Metrics chưa có CIs, entity-identity-disjoint verification hoặc authentic error distribution. Không có assertions ép smoke scores phải cao.
+Edit cost mô tả độ gần chữ, không phải xác suất. Insert/delete có cost 1; generic substitution 1; diacritic-related substitution 0,25; adjacent transposition 0,75. Đây là lựa chọn do người viết đặt để bắt đầu thí nghiệm, chưa được học từ tần suất lỗi người thật.
 
-CPU command đo warm end-to-end check(), gồm tokenization, candidate search và offsets. Peak RSS là whole CLI process high-water mark; cold startup và baseline-runtime-only RAM chưa đo. Bundle bytes gồm artifact và các Python inference modules, không gồm interpreter/stdlib/evaluator. Báo source hashes và raw-byte data/artifact hashes để replay.
+Candidate search giữ tối đa ba words với cost không quá 1,25. Decision có thêm cutoffs: best cost trên 1 hoặc hai candidates gần nhau dưới margin 0,35 có thể khiến abstain. Model có thể biết đáp án trong candidates mà vẫn giữ nguyên vì ambiguous.
+
+Ví dụ “quyễn” gần cả “quyển” và “quyền”. Không có context/frequency ranking nên không biết chắc câu đang nói tới một quyển sách. Nếu “truyền” đã trong lexicon, exact membership giữ nguyên và real-word confusion có thể bị bỏ sót hoàn toàn.
+
+Score hiển thị dùng 1 chia 1 + cost. Không đọc score 0,8 thành 80% đúng. [Training guide](training-from-zero.md) giải thích score của learned Logistic Regression khác nó thế nào.
+
+## 5. Vì sao abstain và vì sao vẫn có lỗi?
+
+Rules hiện abstain với foreign/identifier, possible ASCII capitalized name, informal ASCII, no bounded candidate, weak candidate hoặc ambiguous candidates. Một tên có dấu giống tiếng Việt vẫn có thể bị báo nhầm; một typo viết hoa có thể bị bỏ sót vì giống tên. R000 cho thấy cả hai.
+
+Mục đích học là nhìn thấy trade-off này. Không thêm từng đáp án test vào allowlist rồi coi model đã hiểu tên. Với personal dictionaries thật, entry do người dùng xác nhận là một điều kiện sử dụng khác; được theo dõi ở issue #2.
+
+## 6. Unicode và candidate spans
+
+Minimal edit bỏ prefix/suffix không đổi để trả vùng nhỏ cần thay. So theo cụm Vietnamese base+combining giúp không tách dấu khỏi chữ nền. Source offsets vẫn trên input gốc; canonical-equivalent text không cần edit.
+
+Một candidate khác boundaries không được nhét vào cùng replacement span của candidate đầu. Candidate list trong một finding chỉ giữ các phương án tương thích source span. Current code chưa có full UAX #29 segmentation hoặc general normalization mapping; đó là bài nâng cao riêng.
+
+Input tối đa 256 raw code points; candidate search chỉ xét token không quá 32 NFC code points. Code báo lỗi thay vì silently truncate input dài. Search quét vocabulary với chi phí khoảng V nhân L bình phương, nên timing của seed vocabulary không đại diện full lexicon.
+
+## 7. Artifact đang chứa gì?
+
+Bootstrap JSON có schema_version 1, demo_only true, provenance, syllables và protected_terms. Các names cho biết loại dữ liệu, không làm nó thành learned model. Provenance mô tả nguồn; validator không chứng minh lexical validity hoặc quyền dùng.
+
+Syllables là Vietnamese-letter units; protected terms có thể nhiều tokens, yêu cầu whitespace giữa các tokens khi khớp phrase. Case/NFC matching không thay raw text. Vocabulary hiện do dự án viết, rất nhỏ và chưa chọn project license.
+
+## 8. Chấm và đo để học
+
+Chạy: PYTHONPATH=src python -m vietspeller.cli evaluate data/examples/illustrative.jsonl --artifact data/examples/bootstrap-lexicon.json --split demo --allow-demo --output runs/evaluation.json
+
+Evaluate so predictions với gold. Allow-demo là nhắc nhở không diễn giải đây là independent score. Runs/ là nơi output tạm được gitignore. Đọc meanings/mẫu số ở [benchmark](benchmark.md), rồi xem [R000 report](../experiments/R000-smoke-report.md).
+
+Chạy CPU diagnostic: PYTHONPATH=src python -m vietspeller.cli benchmark data/examples/illustrative.jsonl --artifact data/examples/bootstrap-lexicon.json --split demo --allow-demo --warmup 100 --repeat 1000 --output runs/cpu.json
+
+Kết quả đo warm check(), gồm tokenization, candidates và offsets. Peak RSS là whole CLI process. Chưa có cold startup, runtime-only RAM hoặc length-bucket comparisons. Ta đo để hiểu chứ chưa cần đạt SLA.
+
+External files có thể được evaluate bằng artifact khác và split validation/test. Chỉ khai demo_only false khi thật sự hiểu source và mục đích; đổi flag không làm dữ liệu tự nhiên hoặc độc lập hơn. Tool vẫn ghi unverified_external_evaluation.
+
+## 9. Evaluator biết gì và chưa biết gì?
+
+Exact spans, typed labels, token units, correction top-K, clean-text errors và entity diagnostics đã có. Gold spans chỉ được dùng cho oracle candidate measurement riêng; không đưa cho detector. Các edits qua nhiều tokens/gaps ngoài token có thể không có bounded candidate, và bị tính miss.
+
+Gold variants cùng token được collapse ở token metric. Sentence exact dùng first replacement và NFC equivalence; chưa có mọi alternate sentence reference. Unseen identity split, confidence intervals và oracle ranker accuracy chưa được triển khai.
+
+Abstentions không nên bị UI trình bày như confirmed error highlights mà vẫn loại khỏi metrics. Đây là ví dụ tại sao một measurement phải khớp hành vi ứng dụng, dù hiện ta chỉ học CLI.
+
+## Bài tập
+
+1. Chỉ ra constants/rules do người viết đặt trong baseline.py; có bước optimizer nào không?
+2. Thử một câu đúng chứa từ chưa có trong seed. Quan sát FP hoặc abstention.
+3. Tìm một typo có candidate nhưng không thành finding, rồi đọc reason.
+4. Giải thích vì sao một baseline đúng trên 22 fixtures chưa đủ kết luận ngoài đời.
+5. Chọn một failure case mà chỉ thêm dictionary không giải quyết được. Thử thiết kế feature cho bài học tiếp theo.
+
+Không cần tự hoàn thiện engine trong bài này. Điểm hoàn thành là theo được một example qua code và phân biệt observed behavior với hypothesis.
