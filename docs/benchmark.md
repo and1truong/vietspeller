@@ -1,6 +1,6 @@
 # Benchmark protocol v1
 
-Protocol là specification; evaluator và benchmark dataset chưa được triển khai. Không báo quality từ fixture.
+Protocol là target specification. R evaluator đã có exact character/token/typed span metrics, end-to-end correction, oracle candidate recall và entity diagnostics; xem rules-baseline.md để biết subset semantics. Independent dataset, confidence intervals, complete reference alternatives và entity-disjoint verification chưa có. Fixture results chỉ báo như functional diagnostics, không báo production quality.
 
 ## Partitions
 

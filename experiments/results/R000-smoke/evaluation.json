@@ -1,0 +1,293 @@
+{
+  "records": 22,
+  "detection_character_span": {
+    "tp": 6,
+    "fp": 3,
+    "fn": 7,
+    "precision": 0.6666666666666666,
+    "recall": 0.46153846153846156,
+    "f1": 0.5454545454545454
+  },
+  "detection_token_span": {
+    "tp": 6,
+    "fp": 3,
+    "fn": 7,
+    "precision": 0.6666666666666666,
+    "recall": 0.46153846153846156,
+    "f1": 0.5454545454545454
+  },
+  "detection_typed_span": {
+    "tp": 6,
+    "fp": 3,
+    "fn": 7,
+    "precision": 0.6666666666666666,
+    "recall": 0.46153846153846156,
+    "f1": 0.5454545454545454
+  },
+  "correction": {
+    "gold_edits": 13,
+    "suggested_edits": 9,
+    "end_to_end_top1": 0.46153846153846156,
+    "end_to_end_top3": 0.46153846153846156,
+    "edit_precision": 0.6666666666666666,
+    "oracle_candidate_recall_at3": 0.7692307692307693,
+    "oracle_ranker_accuracy": null
+  },
+  "sentence_exact": {
+    "all": 0.5909090909090909,
+    "clean": 0.9,
+    "noisy": 0.3333333333333333
+  },
+  "clean_text": {
+    "sentences": 10,
+    "tokens": 56,
+    "flagged_sentences": 1,
+    "sentence_flag_rate": 0.1,
+    "false_findings_per_1000_tokens": 17.857142857142858
+  },
+  "entities": {
+    "valid_spans": 18,
+    "changed_valid_spans": 1,
+    "preservation_rate": 0.9444444444444444,
+    "gold_errors_in_entities": 2,
+    "typo_recall": 0.0
+  },
+  "slices": {
+    "chat:informal:fixture": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "records": 1,
+      "gold_edits": 0
+    },
+    "general:strict:fixture": {
+      "tp": 5,
+      "fp": 3,
+      "fn": 5,
+      "precision": 0.625,
+      "recall": 0.5,
+      "f1": 0.5555555555555556,
+      "records": 16,
+      "gold_edits": 10
+    },
+    "technical:strict:fixture": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.3333333333333333,
+      "f1": 0.5,
+      "records": 5,
+      "gold_edits": 3
+    }
+  },
+  "gold_error_labels": {
+    "character_deletion": {
+      "gold_edits": 1,
+      "detected": 0,
+      "recall": 0.0,
+      "correction_top1": 0.0
+    },
+    "character_insertion": {
+      "gold_edits": 1,
+      "detected": 1,
+      "recall": 1.0,
+      "correction_top1": 1.0
+    },
+    "character_substitution": {
+      "gold_edits": 1,
+      "detected": 1,
+      "recall": 1.0,
+      "correction_top1": 1.0
+    },
+    "character_transposition": {
+      "gold_edits": 2,
+      "detected": 0,
+      "recall": 0.0,
+      "correction_top1": 0.0
+    },
+    "input_method": {
+      "gold_edits": 2,
+      "detected": 0,
+      "recall": 0.0,
+      "correction_top1": 0.0
+    },
+    "missing_diacritic": {
+      "gold_edits": 4,
+      "detected": 4,
+      "recall": 1.0,
+      "correction_top1": 1.0
+    },
+    "real_word_confusion": {
+      "gold_edits": 1,
+      "detected": 0,
+      "recall": 0.0,
+      "correction_top1": 0.0
+    },
+    "wrong_diacritic": {
+      "gold_edits": 1,
+      "detected": 0,
+      "recall": 0.0,
+      "correction_top1": 0.0
+    }
+  },
+  "not_measured": [
+    "confidence_intervals",
+    "unseen_entity_identity_split",
+    "oracle_ranker_accuracy",
+    "alternative_sentence_references",
+    "deployment_prevalence"
+  ],
+  "errors": [
+    {
+      "id": "clean-vietnamese-name",
+      "text": "Tôi đọc bài viết về Nguyễn Phú Trọng.",
+      "reference": "Tôi đọc bài viết về Nguyễn Phú Trọng.",
+      "suggested_text": "Tôi đọc bài viết về Nguyễn Phú Trong.",
+      "fp_spans": [
+        [
+          33,
+          34
+        ]
+      ],
+      "fn_spans": [],
+      "sentence_exact": false
+    },
+    {
+      "id": "missing-diacritic",
+      "text": "Tôi đang hoc tiếng Việt.",
+      "reference": "Tôi đang học tiếng Việt.",
+      "suggested_text": "Tôi đang học tiếng Viết.",
+      "fp_spans": [
+        [
+          21,
+          22
+        ]
+      ],
+      "fn_spans": [],
+      "sentence_exact": false
+    },
+    {
+      "id": "wrong-diacritic",
+      "text": "Tôi mua một quyễn sách.",
+      "reference": "Tôi mua một quyển sách.",
+      "suggested_text": "Tôi mua một quyễn sách.",
+      "fp_spans": [],
+      "fn_spans": [
+        [
+          15,
+          16
+        ]
+      ],
+      "sentence_exact": false
+    },
+    {
+      "id": "input-telex",
+      "text": "Tôi đang học tieengs Việt.",
+      "reference": "Tôi đang học tiếng Việt.",
+      "suggested_text": "Tôi đang học tieengs Viết.",
+      "fp_spans": [
+        [
+          23,
+          24
+        ]
+      ],
+      "fn_spans": [
+        [
+          13,
+          20
+        ]
+      ],
+      "sentence_exact": false
+    },
+    {
+      "id": "input-vni",
+      "text": "To6i đang học.",
+      "reference": "Tôi đang học.",
+      "suggested_text": "To6i đang học.",
+      "fp_spans": [],
+      "fn_spans": [
+        [
+          0,
+          4
+        ]
+      ],
+      "sentence_exact": false
+    },
+    {
+      "id": "real-word",
+      "text": "Tôi chơi bóng truyền.",
+      "reference": "Tôi chơi bóng chuyền.",
+      "suggested_text": "Tôi chơi bóng truyền.",
+      "fp_spans": [],
+      "fn_spans": [
+        [
+          14,
+          16
+        ]
+      ],
+      "sentence_exact": false
+    },
+    {
+      "id": "name-transposition",
+      "text": "Tôi đang học Pyhton.",
+      "reference": "Tôi đang học Python.",
+      "suggested_text": "Tôi đang học Pyhton.",
+      "fp_spans": [],
+      "fn_spans": [
+        [
+          15,
+          17
+        ]
+      ],
+      "sentence_exact": false
+    },
+    {
+      "id": "missing-character",
+      "text": "Tôi đag học.",
+      "reference": "Tôi đang học.",
+      "suggested_text": "Tôi đag học.",
+      "fp_spans": [],
+      "fn_spans": [
+        [
+          6,
+          6
+        ]
+      ],
+      "sentence_exact": false
+    },
+    {
+      "id": "multiple-errors",
+      "text": "Tôi hoc Pyhton.",
+      "reference": "Tôi học Python.",
+      "suggested_text": "Tôi học Pyhton.",
+      "fp_spans": [],
+      "fn_spans": [
+        [
+          10,
+          12
+        ]
+      ],
+      "sentence_exact": false
+    }
+  ],
+  "evaluation_kind": "diagnostic_only",
+  "split": "demo",
+  "artifact_sha256": "36fdf11bec0f7078e912781251cc3fe3020c5b391ce9a039530e8caa1c19554a",
+  "data_sha256": {
+    "data/examples/illustrative.jsonl": "6d03134cb360b26efe36d26b7cf3c0365d5abfe976308115e6db9ca6bd661c4c"
+  },
+  "code_sha256": {
+    "__init__.py": "441e8b1732fe3bb36fc3f4c781351830213ebdc5ee3447f5204700292039d554",
+    "data.py": "184734969fbe66c547b279aeae316e818584c0fb5408388e300b2aa2553990e8",
+    "baseline.py": "5fcf0555fd0e5c9879d280abd6386e1a7155b661aadb8566aa14bce1e082dbee",
+    "text.py": "18f1625893c3b49183c12a8974a57162f03b4707d5a4939a2b440ee471db7fb2",
+    "benchmark.py": "b6b84688fb9f2f80443a0b07443294c52e2ba126dc73f66010c7df54975ab4bb",
+    "cli.py": "f1acc378ab650c107a45f455aad254e933665f16c1a7014e5ab0bf6d2d57065d",
+    "evaluation.py": "01b62ac5a7aea95094376fc692da5d4e8c821a13bf1e4cbae2d540696e21bf05"
+  },
+  "notice": "No independent quality claim. Provenance, licensing and near-duplicate audits remain human checks."
+}

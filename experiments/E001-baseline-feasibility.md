@@ -1,6 +1,6 @@
 # E001 — Precision-constrained baseline feasibility
 
-Status: designed, not run. Không có model hoặc benchmark results.
+Status: designed, not run on independent data. R implementation và evaluator đã có; R000 smoke diagnostic được báo riêng. Chưa có L/LC/LCN models, matched-FPR operating-point selection hoặc E001 benchmark results.
 
 ## Quyết định cần hỗ trợ
 

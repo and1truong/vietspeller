@@ -1,6 +1,6 @@
 # Roadmap và phase gates
 
-Trạng thái: **Phase 1 contract drafted; Phase 2 tooling scaffolded.** Data gate chưa đạt. Chưa có authentic data, independent gold benchmark, hoặc trained baseline.
+Trạng thái: **Phase 1 contract drafted; Phase 2 tooling scaffolded; R baseline và evaluator chạy được trên diagnostic fixtures.** Data gate chưa đạt. Chưa có authentic data, independent gold benchmark, hoặc learned baseline. R000 là smoke check, không hoàn tất E001 hoặc thông qua Phase 3 gate.
 
 | Phase | Deliverable | Gate trước khi chuyển tiếp |
 |---|---|---|
@@ -20,4 +20,4 @@ Gate là yêu cầu có bằng chứng hoặc giải quyết dependency. Baselin
 
 Trước mỗi experiment: người học ghi prediction và lý do; mentor review assumptions; người học implement/run; mentor review code/metrics; hai bên chọn experiment tiếp dựa trên error analysis. Không xin approval cho routine tooling. Khi người học yêu cầu full implementation thì cung cấp trực tiếp.
 
-Việc tiếp theo: điền hypotheses của E001, adjudicate examples và chọn một nguồn authentic cho development. Scaffold không gọi LLM hoặc tải dataset tự động. Provider/credential setup sẽ làm khi bắt đầu LLM generation, không lưu API keys vào repo.
+Việc tiếp theo: adjudicate examples, xác minh license và nhập nguồn authentic cho development; chuẩn bị lexicon có provenance rộng hơn; sau data gate mới train hashed linear classifier và chạy E001. Tooling hiện không gọi LLM hoặc tải dataset tự động. Provider/credential setup sẽ làm khi bắt đầu LLM generation, không lưu API keys vào repo.

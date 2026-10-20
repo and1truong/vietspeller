@@ -1,0 +1,66 @@
+{
+  "calls": 1000,
+  "warmup_calls": 100,
+  "batch_size": 1,
+  "execution": "single Python thread",
+  "warm_latency_ms": {
+    "p50": 1.615918,
+    "p95": 4.764299
+  },
+  "serial_throughput_sentences_per_second": 550.726266298452,
+  "input_codepoint_lengths": [
+    12,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    24,
+    26,
+    28,
+    34,
+    37,
+    39,
+    40,
+    45
+  ],
+  "process_peak_rss_bytes": 12845056,
+  "artifact_bytes": 1745,
+  "inference_python_source_bytes": 19990,
+  "inference_bundle_bytes": 21735,
+  "size_excludes": [
+    "Python interpreter",
+    "standard library",
+    "evaluation and CLI tooling"
+  ],
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "os": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "cold_process_latency_ms": null,
+  "limitations": [
+    "Peak RSS includes data loading and the complete CLI process; run in a fresh process.",
+    "Local environment timing only; no CPU affinity or frequency control.",
+    "Lexicon scan is O(vocabulary_size * token_length^2); bootstrap timings do not extrapolate.",
+    "No length-bucket or baseline-runtime-only RAM measurements yet."
+  ],
+  "evaluation_kind": "diagnostic_only",
+  "split": "demo",
+  "artifact_sha256": "36fdf11bec0f7078e912781251cc3fe3020c5b391ce9a039530e8caa1c19554a",
+  "data_sha256": {
+    "data/examples/illustrative.jsonl": "6d03134cb360b26efe36d26b7cf3c0365d5abfe976308115e6db9ca6bd661c4c"
+  },
+  "code_sha256": {
+    "__init__.py": "441e8b1732fe3bb36fc3f4c781351830213ebdc5ee3447f5204700292039d554",
+    "data.py": "184734969fbe66c547b279aeae316e818584c0fb5408388e300b2aa2553990e8",
+    "baseline.py": "5fcf0555fd0e5c9879d280abd6386e1a7155b661aadb8566aa14bce1e082dbee",
+    "text.py": "18f1625893c3b49183c12a8974a57162f03b4707d5a4939a2b440ee471db7fb2",
+    "benchmark.py": "b6b84688fb9f2f80443a0b07443294c52e2ba126dc73f66010c7df54975ab4bb",
+    "cli.py": "f1acc378ab650c107a45f455aad254e933665f16c1a7014e5ab0bf6d2d57065d",
+    "evaluation.py": "01b62ac5a7aea95094376fc692da5d4e8c821a13bf1e4cbae2d540696e21bf05"
+  },
+  "notice": "No independent quality claim. Provenance, licensing and near-duplicate audits remain human checks."
+}

@@ -16,3 +16,6 @@ jobs:
       - run: python -m vietspeller.cli validate data/examples/illustrative.jsonl
         env:
           PYTHONPATH: src
+      - run: python -m vietspeller.cli evaluate data/examples/illustrative.jsonl --artifact data/examples/bootstrap-lexicon.json --split demo --allow-demo --output runs/ci-diagnostic.json
+        env:
+          PYTHONPATH: src

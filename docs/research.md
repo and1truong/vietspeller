@@ -1,6 +1,6 @@
 # Competing architectures và evidence ledger
 
-Không có benchmark results của Vietspeller. Mọi chất lượng kỳ vọng và data volume dưới đây là hypotheses hoặc starting budgets.
+Chưa có independent benchmark results của Vietspeller; R000 chỉ là fixture/CPU smoke diagnostic. Mọi chất lượng kỳ vọng và data volume dưới đây là hypotheses hoặc starting budgets.
 
 | Option | Components | Parameters và budget | Starting training budget | Main hypothesis / failure |
 |---|---|---|---|---|
